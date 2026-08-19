@@ -1,4 +1,5 @@
-import type { Analysis, Candle, Levels } from "./types";
+import { buildNextMove } from "./next-move";
+import type { Analysis, Candle, Levels, Quote } from "./types";
 
 function last<T>(arr: T[]): T | undefined {
   return arr[arr.length - 1];
@@ -155,7 +156,10 @@ function format(n: number) {
   return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 }
 
-export function analyze(candles: Candle[]): Analysis {
+export function analyze(
+  candles: Candle[],
+  extras?: { quote: Quote; intraday: Candle[] },
+): Analysis {
   const closes = candles.map((c) => c.close);
   const lastClose = last(closes);
   if (!lastClose || candles.length < 5) {
@@ -172,6 +176,17 @@ export function analyze(candles: Candle[]): Analysis {
       sma200: null,
       atr: null,
       levels: null,
+      nextMove: extras
+        ? buildNextMove({
+            quote: extras.quote,
+            daily: candles,
+            intraday: extras.intraday,
+            bias: "neutral",
+            levels: null,
+            atr: null,
+            rsi: null,
+          })
+        : null,
     };
   }
 
@@ -301,5 +316,16 @@ export function analyze(candles: Candle[]): Analysis {
     sma200,
     atr: atrNow,
     levels,
+    nextMove: extras
+      ? buildNextMove({
+          quote: extras.quote,
+          daily: candles,
+          intraday: extras.intraday,
+          bias,
+          levels,
+          atr: atrNow,
+          rsi: rsiNow,
+        })
+      : null,
   };
 }

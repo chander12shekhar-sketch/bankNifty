@@ -36,6 +36,29 @@ export type Levels = {
   swingLow: number;
 };
 
+export type OptionsSide = "CE" | "PE" | "NONE";
+
+export type NextMove = {
+  sessionLabel: string;
+  marketStatus: "open" | "closed" | "preopen";
+  direction: "up" | "down" | "range";
+  confidence: "low" | "medium" | "high";
+  headline: string;
+  why: string;
+  side: OptionsSide;
+  action: string;
+  atmStrike: number;
+  otmStrike: number;
+  expiryHint: string;
+  trigger: number;
+  triggerNote: string;
+  target: number;
+  invalidation: number;
+  timeStop: string;
+  triggerLive: boolean;
+  rules: string[];
+};
+
 export type Analysis = {
   bias: "bullish" | "bearish" | "neutral";
   headline: string;
@@ -52,6 +75,7 @@ export type Analysis = {
   sma200: number | null;
   atr: number | null;
   levels: Levels | null;
+  nextMove: NextMove | null;
 };
 
 export type BankNiftyResponse = {

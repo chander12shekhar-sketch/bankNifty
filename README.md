@@ -1,8 +1,8 @@
 # Bank Nifty desk
 
-A small Next.js desk for **NIFTY BANK** (`^NSEBANK`). It pulls candles from Yahoo Finance, draws a candlestick chart, and writes a technical readout from SMA 20/50/200, RSI, MACD, ATR, and classic pivot levels.
+A small Next.js desk for **NIFTY BANK** (`^NSEBANK`). It pulls candles from Yahoo Finance, draws a candlestick chart, writes a technical readout, and builds a **same-session options playbook** (CE vs PE, ATM/OTM strikes, trigger, target, invalidation).
 
-This is not investment advice. Yahoo’s index feed can lag, and Bank Nifty index volume is often empty.
+This is not investment advice. Options can expire worthless. Yahoo’s index feed can lag. Confirm expiry and lot size on NSE before you order.
 
 ## Run locally
 

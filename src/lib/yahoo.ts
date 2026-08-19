@@ -117,9 +117,10 @@ function lastSessionCandles(candles: Candle[]): Candle[] {
 
 export async function getBankNifty(range: RangeKey): Promise<BankNiftyResponse> {
   const view = RANGE_QUERY[range];
-  const [viewPayload, dailyPayload] = await Promise.all([
+  const [viewPayload, dailyPayload, intraPayload] = await Promise.all([
     fetchChart(view.range, view.interval),
     fetchChart("2y", "1d"),
+    fetchChart("5d", "5m"),
   ]);
 
   if (viewPayload.chart.error) {
@@ -159,10 +160,12 @@ export async function getBankNifty(range: RangeKey): Promise<BankNiftyResponse> 
     marketTime: meta?.regularMarketTime ?? lastView?.time ?? 0,
   };
 
+  const intraday = lastSessionCandles(parseCandles(intraPayload));
+
   return {
     quote,
     candles,
-    analysis: analyze(analysisSource),
+    analysis: analyze(analysisSource, { quote, intraday }),
     range,
     source: "Yahoo Finance (^NSEBANK)",
     fetchedAt: new Date().toISOString(),

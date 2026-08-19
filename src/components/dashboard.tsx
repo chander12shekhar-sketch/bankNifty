@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { NextMoveCard } from "@/components/next-move-card";
 import { PriceChart } from "@/components/price-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BankNiftyResponse, RangeKey } from "@/lib/types";
@@ -112,8 +113,8 @@ export function Dashboard({ initialData }: DashboardProps) {
             Bank Nifty
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Live NIFTY BANK (^NSEBANK) candles with moving averages, RSI, MACD,
-            and pivot levels.
+            Live NIFTY BANK (^NSEBANK) with a same-session options playbook:
+            trigger, target, invalidation, and nearby CE/PE strikes.
           </p>
         </div>
         <Button
@@ -215,6 +216,8 @@ export function Dashboard({ initialData }: DashboardProps) {
           </>
         ) : null}
       </section>
+
+      {analysis?.nextMove ? <NextMoveCard plan={analysis.nextMove} /> : null}
 
       <Card className="overflow-hidden">
         <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
