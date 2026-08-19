@@ -18,8 +18,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PriceChart } from "@/components/price-chart";
+
+const PriceChart = dynamic(
+  () => import("@/components/price-chart").then((mod) => mod.PriceChart),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[320px] w-full sm:h-[420px]" />,
+  },
+);
 import type { BankNiftyResponse, RangeKey } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
