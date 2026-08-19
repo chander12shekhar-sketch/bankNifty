@@ -37,7 +37,7 @@ function istNow(at = new Date()) {
   };
 }
 
-function marketStatus(at = new Date()): NextMove["marketStatus"] {
+export function cashMarketStatus(at = new Date()): NextMove["marketStatus"] {
   const { weekday, mins } = istNow(at);
   if (weekday === "Sat" || weekday === "Sun") return "closed";
   if (mins < 9 * 60 + 15) return "preopen";
@@ -100,7 +100,7 @@ export function buildNextMove(input: {
   rsi: number | null;
 }): NextMove {
   const { quote, daily, intraday, bias, levels, atr, rsi } = input;
-  const status = marketStatus();
+  const status = cashMarketStatus();
   const price = quote.price;
   const atm = roundStrike(price);
   const sessionLabel =

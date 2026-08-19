@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const range: RangeKey = isRangeKey(raw) ? raw : "6mo";
 
   try {
-    const data = await getBankNifty(range);
+    const data = await getBankNifty(range, { fresh: true });
     return Response.json(data);
   } catch (error) {
     const message =

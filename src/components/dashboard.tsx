@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import {
   Activity,
   AlertCircle,
@@ -10,7 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -117,14 +118,19 @@ export function Dashboard({ initialData }: DashboardProps) {
             trigger, target, invalidation, and nearby CE/PE strikes.
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => void load(range)}
-          disabled={loading}
-        >
-          <RefreshCw className={cn("size-4", loading && "animate-spin")} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/move" className={buttonVariants({ variant: "outline" })}>
+            Phone view
+          </Link>
+          <Button
+            variant="outline"
+            onClick={() => void load(range)}
+            disabled={loading}
+          >
+            <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
       </header>
 
       {error ? (

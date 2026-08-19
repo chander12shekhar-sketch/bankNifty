@@ -79,7 +79,11 @@ function parseCandles(payload: YahooChart): Candle[] {
   return candles;
 }
 
-async function fetchChart(range: string, interval: string): Promise<YahooChart> {
+async function fetchChart(
+  range: string,
+  interval: string,
+  fresh = false,
+): Promise<YahooChart> {
   const url = new URL("https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(SYMBOL));
   url.searchParams.set("range", range);
   url.searchParams.set("interval", interval);
@@ -92,7 +96,8 @@ async function fetchChart(range: string, interval: string): Promise<YahooChart> 
         "Mozilla/5.0 (compatible; BankNiftyDesk/1.0; +https://localhost)",
       Accept: "application/json",
     },
-    next: { revalidate: 60 },
+    cache: fresh ? "no-store" : "force-cache",
+    next: { revalidate: fresh ? 0 : 60 },
   });
   if (!res.ok) {
     throw new Error(`Yahoo Finance returned ${res.status}`);
@@ -115,12 +120,16 @@ function lastSessionCandles(candles: Candle[]): Candle[] {
   return sameDay.length >= 8 ? sameDay : candles.slice(-78);
 }
 
-export async function getBankNifty(range: RangeKey): Promise<BankNiftyResponse> {
+export async function getBankNifty(
+  range: RangeKey,
+  options: { fresh?: boolean } = {},
+): Promise<BankNiftyResponse> {
+  const fresh = options.fresh ?? false;
   const view = RANGE_QUERY[range];
   const [viewPayload, dailyPayload, intraPayload] = await Promise.all([
-    fetchChart(view.range, view.interval),
-    fetchChart("2y", "1d"),
-    fetchChart("5d", "5m"),
+    fetchChart(view.range, view.interval, fresh),
+    fetchChart("2y", "1d", fresh),
+    fetchChart("5d", "5m", fresh),
   ]);
 
   if (viewPayload.chart.error) {
