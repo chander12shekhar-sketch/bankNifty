@@ -56,6 +56,12 @@ export type NextMove = {
   invalidation: number;
   timeStop: string;
   triggerLive: boolean;
+  buyContract: string;
+  buyStrike: number;
+  whenToBuy: string;
+  entryWindow: string;
+  expiryDate: string;
+  indiaVix: number | null;
   rules: string[];
 };
 

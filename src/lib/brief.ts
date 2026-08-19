@@ -25,18 +25,21 @@ export function formatBrief(data: BankNiftyResponse): string {
   ];
 
   if (move) {
-    lines.push(
+    const moveLines = [
       `NEXT MOVE (${move.sessionLabel}, market ${move.marketStatus}, ${move.confidence} confidence)`,
-      move.headline,
-      move.action,
+      `BUY ${move.buyContract}`,
+      `WHEN: ${move.whenToBuy}`,
+      `Window ${move.entryWindow}`,
       `Trigger ${n0(move.trigger)}${move.triggerLive ? " — IN PLAY" : " — wait"}  |  Target ${n0(move.target)}  |  Invalidation ${n0(move.invalidation)}`,
-      `ATM ${n0(move.atmStrike)} ${move.side === "NONE" ? "(stand aside)" : move.side}  |  OTM ${n0(move.otmStrike)}`,
+      `Strike ${n0(move.buyStrike)} ${move.side === "NONE" ? "" : move.side}  |  cheaper ${n0(move.otmStrike)}`,
+      move.indiaVix != null ? `India VIX ${move.indiaVix.toFixed(1)}` : "",
       move.triggerNote,
       move.timeStop,
       move.expiryHint,
       `Why: ${move.why}`,
       "",
-    );
+    ].filter((line) => line !== "");
+    lines.push(...moveLines);
   }
 
   lines.push(a.headline, a.summary, "");

@@ -158,7 +158,7 @@ function format(n: number) {
 
 export function analyze(
   candles: Candle[],
-  extras?: { quote: Quote; intraday: Candle[] },
+  extras?: { quote: Quote; intraday: Candle[]; indiaVix?: number | null },
 ): Analysis {
   const closes = candles.map((c) => c.close);
   const lastClose = last(closes);
@@ -185,6 +185,7 @@ export function analyze(
             levels: null,
             atr: null,
             rsi: null,
+            indiaVix: extras.indiaVix ?? null,
           })
         : null,
     };
@@ -325,6 +326,7 @@ export function analyze(
           levels,
           atr: atrNow,
           rsi: rsiNow,
+          indiaVix: extras.indiaVix ?? null,
         })
       : null,
   };

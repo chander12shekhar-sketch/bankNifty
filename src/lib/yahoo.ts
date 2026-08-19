@@ -80,11 +80,14 @@ function parseCandles(payload: YahooChart): Candle[] {
 }
 
 async function fetchChart(
+  symbol: string,
   range: string,
   interval: string,
   fresh = false,
 ): Promise<YahooChart> {
-  const url = new URL("https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(SYMBOL));
+  const url = new URL(
+    "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(symbol),
+  );
   url.searchParams.set("range", range);
   url.searchParams.set("interval", interval);
   url.searchParams.set("includePrePost", "false");
@@ -126,10 +129,11 @@ export async function getBankNifty(
 ): Promise<BankNiftyResponse> {
   const fresh = options.fresh ?? false;
   const view = RANGE_QUERY[range];
-  const [viewPayload, dailyPayload, intraPayload] = await Promise.all([
-    fetchChart(view.range, view.interval, fresh),
-    fetchChart("2y", "1d", fresh),
-    fetchChart("5d", "5m", fresh),
+  const [viewPayload, dailyPayload, intraPayload, vixPayload] = await Promise.all([
+    fetchChart(SYMBOL, view.range, view.interval, fresh),
+    fetchChart(SYMBOL, "2y", "1d", fresh),
+    fetchChart(SYMBOL, "5d", "5m", fresh),
+    fetchChart("^INDIAVIX", "5d", "1d", fresh).catch(() => null),
   ]);
 
   if (viewPayload.chart.error) {
@@ -146,9 +150,18 @@ export async function getBankNifty(
   const lastDaily = daily[daily.length - 1];
   const price =
     meta?.regularMarketPrice ?? lastView?.close ?? lastDaily?.close ?? 0;
+  const todayYmd = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
+  const lastDailyYmd = lastDaily
+    ? new Date(lastDaily.time * 1000).toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata",
+      })
+    : "";
   const previousClose =
-    meta?.previousClose ??
-    (daily.length >= 2 ? daily[daily.length - 2].close : price);
+    lastDailyYmd === todayYmd && daily.length >= 2
+      ? daily[daily.length - 2].close
+      : (lastDaily?.close ?? price);
   const change = price - previousClose;
   const changePercent = previousClose ? (change / previousClose) * 100 : 0;
 
@@ -169,14 +182,19 @@ export async function getBankNifty(
     marketTime: meta?.regularMarketTime ?? lastView?.time ?? 0,
   };
 
+  const vixCandles = vixPayload ? parseCandles(vixPayload) : [];
+  const indiaVix =
+    vixPayload?.chart.result?.[0]?.meta.regularMarketPrice ??
+    (vixCandles.length ? vixCandles[vixCandles.length - 1].close : null);
+
   const intraday = lastSessionCandles(parseCandles(intraPayload));
 
   return {
     quote,
     candles,
-    analysis: analyze(analysisSource, { quote, intraday }),
+    analysis: analyze(analysisSource, { quote, intraday, indiaVix }),
     range,
-    source: "Yahoo Finance (^NSEBANK)",
+    source: "Yahoo Finance (^NSEBANK, ^INDIAVIX)",
     fetchedAt: new Date().toISOString(),
   };
 }

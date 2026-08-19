@@ -65,13 +65,29 @@ export function NextMoveCard({ plan }: { plan: NextMove }) {
       <CardContent className="space-y-5">
         <div
           className={cn(
-            "rounded-xl px-4 py-3 font-medium",
+            "rounded-xl px-4 py-3",
             plan.side === "PE" && "bg-rose-500/10 text-rose-200",
             plan.side === "CE" && "bg-emerald-500/10 text-emerald-200",
             plan.side === "NONE" && "bg-muted text-muted-foreground",
           )}
         >
-          {plan.action}
+          <p className="text-xs uppercase tracking-wide opacity-80">Buy this</p>
+          <p className="font-mono text-lg font-semibold sm:text-xl">
+            {plan.buyContract}
+          </p>
+          <p className="mt-1 text-sm">{plan.action}</p>
+        </div>
+
+        <div className="rounded-xl border px-4 py-3">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            When to buy
+          </p>
+          <p className="mt-1 text-sm font-medium leading-relaxed">
+            {plan.whenToBuy}
+          </p>
+          <p className="mt-2 font-mono text-sm text-sky-300">
+            Window: {plan.entryWindow}
+          </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -79,17 +95,20 @@ export function NextMoveCard({ plan }: { plan: NextMove }) {
             label={plan.triggerLive ? "Trigger (in play)" : "Wait for trigger"}
             value={inr(plan.trigger)}
           />
-          <Level label="Target" value={inr(plan.target)} />
+          <Level label="Target on index" value={inr(plan.target)} />
           <Level label="Invalidation" value={inr(plan.invalidation)} />
           <Level
-            label={plan.side === "NONE" ? "ATM (stand aside)" : "ATM strike"}
-            value={`${inr(plan.atmStrike)} ${plan.side === "NONE" ? "" : plan.side}`}
+            label={plan.side === "NONE" ? "ATM (stand aside)" : "Buy strike"}
+            value={`${inr(plan.buyStrike)} ${plan.side === "NONE" ? "" : plan.side}`}
           />
         </div>
 
         <p className="text-sm text-muted-foreground">{plan.triggerNote}</p>
         <p className="text-sm text-muted-foreground">{plan.timeStop}</p>
-        <p className="text-xs text-muted-foreground">{plan.expiryHint}</p>
+        <p className="text-xs text-muted-foreground">
+          {plan.expiryHint}
+          {plan.indiaVix != null ? ` India VIX ${plan.indiaVix.toFixed(1)}.` : ""}
+        </p>
 
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           {plan.rules.map((rule) => (
