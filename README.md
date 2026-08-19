@@ -1,8 +1,8 @@
 # Bank Nifty desk
 
-A small Next.js desk for **NIFTY BANK** (`^NSEBANK`). It pulls candles from Yahoo Finance, draws a candlestick chart, writes a technical readout, and builds a **same-session options playbook** (CE vs PE, ATM/OTM strikes, trigger, target, invalidation).
+A small Next.js desk for **NIFTY BANK** (`^NSEBANK`). It pulls candles from Yahoo Finance, draws a candlestick chart, writes a technical readout, and builds a **same-session options playbook**.
 
-This is not investment advice. Options can expire worthless. Yahoo’s index feed can lag. Confirm expiry and lot size on NSE before you order.
+This is not investment advice. Options can expire worthless. Confirm expiry and lot size on NSE before you order.
 
 ## Run locally
 
@@ -11,26 +11,22 @@ npm install
 npm run dev -- --port 4317
 ```
 
-- Chart desk: [http://localhost:4317](http://localhost:4317)
+- Chart: [http://localhost:4317](http://localhost:4317)
 - Phone next-move: [http://localhost:4317/move](http://localhost:4317/move)
-- Fresh text brief: `npm run brief` or [http://localhost:4317/api/banknifty/brief?format=text](http://localhost:4317/api/banknifty/brief?format=text)
+- Fresh text: `npm run brief`
 
-On a phone, open `/move`, then **Add to Home Screen** (Safari) or **Install app** (Chrome). The page refreshes when you reopen it, and every minute while the cash market is open.
+## Get this on your phone (no Automations)
 
-## Cursor Automation (on demand + schedule)
+Cursor Automations are optional. Use any of these:
 
-This agent cannot save an automation into your Cursor account. Create it once (about a minute):
+1. **Host this app and bookmark `/move`.** Put the Next.js app on any host you can open from LTE (Vercel, your VPS, Cloudflare). On the phone open `/move` → Share → Add to Home Screen (iPhone) or Install app (Android). That is the live CE/PE card. It refreshes when you reopen it.
 
-1. Open [cursor.com/automations/new](https://cursor.com/automations/new)
-2. Attach **this repository**, branch `main`
-3. Copy the prompt and trigger list from [`.cursor/automations/bank-nifty-next-move.md`](.cursor/automations/bank-nifty-next-move.md)
-4. Turn **off** pull requests. Optionally enable **Send to Slack**
-5. Save, then copy the **webhook URL + API key** for on-demand runs from your phone (iOS Shortcuts, or any HTTP client)
+2. **Cursor Cloud Agent from the phone.** iPhone: Cursor iOS app. Android: Chrome → [cursor.com/agents](https://cursor.com/agents) → Install app. Start an agent **on this repo** and type `brief`. The agent runs `npm run brief` and replies with spot, next move, and strikes. This is the on-demand path that does not need Automations.
 
-From the Cursor **iOS** app or [cursor.com/agents](https://cursor.com/agents) (Android: install that site as a PWA), you can also start a cloud agent and say “Bank Nifty brief”.
+3. **WhatsApp or copy.** On `/move`, tap **Copy brief** or **WhatsApp** and send it to yourself. The last plan sits in your chat.
 
-Scheduled crons in that file are UTC: 09:20, 12:30, and 15:15 IST on weekdays.
+4. **Ask this same cloud agent later.** Open the existing agent thread on [cursor.com/agents](https://cursor.com/agents) from the phone and say `brief` again.
 
 ## Stack
 
-Next.js (App Router), TypeScript, Tailwind, and shadcn/ui. The chart is an SVG candlestick plot so it stays readable without a canvas library.
+Next.js (App Router), TypeScript, Tailwind, and shadcn/ui.
