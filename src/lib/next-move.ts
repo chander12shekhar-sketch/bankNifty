@@ -188,14 +188,22 @@ export function buildNextMove(input: {
       ? `Buy ${format(atm)} PE only after the trigger. Cheaper debit: ${format(otm)} PE.`
       : side === "CE"
         ? `Buy ${format(atm)} CE only after the trigger. Cheaper debit: ${format(otm)} CE.`
-        : `Do not buy CE or PE yet. Wait for a break of ${format(quote.dayHigh)} (calls) or ${format(quote.dayLow)} (puts).`;
+        : dailyDown
+          ? `Do not buy yet. Daily lean is down: buy ${format(atm)} PE only on a 5-minute close under ${format(quote.dayLow)}. Against-trend ${format(atm)} CE only if ${format(quote.dayHigh)} breaks.`
+          : dailyUp
+            ? `Do not buy yet. Daily lean is up: buy ${format(atm)} CE only on a 5-minute close over ${format(quote.dayHigh)}. Against-trend ${format(atm)} PE only if ${format(quote.dayLow)} breaks.`
+            : `Do not buy CE or PE yet. Wait for a break of ${format(quote.dayHigh)} (calls) or ${format(quote.dayLow)} (puts).`;
 
   const headline =
     direction === "down"
       ? `Next move lean: down. Plan a PE if ${format(trigger)} breaks.`
       : direction === "up"
         ? `Next move lean: up. Plan a CE if ${format(trigger)} breaks.`
-        : `Next move: sideways until a range break. Stand aside on options.`;
+        : dailyDown
+          ? `Next move: chop first. Daily lean still down — no PE until ${format(quote.dayLow)} breaks.`
+          : dailyUp
+            ? `Next move: chop first. Daily lean still up — no CE until ${format(quote.dayHigh)} breaks.`
+            : `Next move: sideways until a range break. Stand aside on options.`;
 
   const whyParts: string[] = [];
   whyParts.push(
