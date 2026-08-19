@@ -15,4 +15,4 @@ Open [http://localhost:4317](http://localhost:4317). Use **1D / 5D / 1M / 3M / 6
 
 ## Stack
 
-Next.js (App Router), TypeScript, Tailwind, shadcn/ui, TradingView lightweight-charts.
+Next.js (App Router), TypeScript, Tailwind, and shadcn/ui. The chart is an SVG candlestick plot so it stays readable without a canvas library.
