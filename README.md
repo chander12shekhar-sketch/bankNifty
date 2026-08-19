@@ -19,7 +19,7 @@ npm run dev -- --port 4317
 
 Cursor Automations are optional. Use any of these:
 
-1. **Host this app and bookmark `/move`.** Put the Next.js app on any host you can open from LTE (Vercel, your VPS, Cloudflare). On the phone open `/move` → Share → Add to Home Screen (iPhone) or Install app (Android). That is the live CE/PE card. It refreshes when you reopen it.
+1. **Host this app and bookmark `/move`.** Put the Next.js app on any host you can open from LTE (Vercel, your VPS, Cloudflare). On the phone open `/move` → Share → Add to Home Screen (iPhone) or Install app (Android). That is the live CE/PE card. It auto-refreshes every 18 seconds while the tab is visible.
 
 2. **Cursor Cloud Agent from the phone.** iPhone: Cursor iOS app. Android: Chrome → [cursor.com/agents](https://cursor.com/agents) → Install app. Start an agent **on this repo** and type `brief`. The agent runs `npm run brief` and replies with spot, next move, and strikes. This is the on-demand path that does not need Automations.
 

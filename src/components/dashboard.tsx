@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -23,6 +23,7 @@ import { NextMoveCard } from "@/components/next-move-card";
 import { PriceChart } from "@/components/price-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BankNiftyResponse, RangeKey } from "@/lib/types";
+import { REFRESH_MS } from "@/lib/refresh";
 import { cn } from "@/lib/utils";
 
 const RANGES: { id: RangeKey; label: string }[] = [
@@ -78,10 +79,12 @@ export function Dashboard({ initialData }: DashboardProps) {
   );
   const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async (nextRange: RangeKey) => {
+  const load = useCallback(async (nextRange: RangeKey, silent = false) => {
     setRange(nextRange);
-    setLoading(true);
-    setError(null);
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await fetch(`/api/banknifty?range=${nextRange}`, {
         cache: "no-store",
@@ -91,13 +94,31 @@ export function Dashboard({ initialData }: DashboardProps) {
         throw new Error(body.error || "Could not load Bank Nifty");
       }
       setData(body as BankNiftyResponse);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load Bank Nifty");
-      setData(null);
+      if (!silent) {
+        setError(err instanceof Error ? err.message : "Could not load Bank Nifty");
+        setData(null);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") void load(range, true);
+    };
+    const id = window.setInterval(tick, REFRESH_MS);
+    const onVis = () => {
+      if (document.visibilityState === "visible") void load(range, true);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [load, range]);
 
   const quote = data?.quote;
   const up = (quote?.change ?? 0) >= 0;
@@ -114,8 +135,9 @@ export function Dashboard({ initialData }: DashboardProps) {
             Bank Nifty
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Live NIFTY BANK (^NSEBANK) with a same-session options playbook:
-            trigger, target, invalidation, and nearby CE/PE strikes.
+            Live NIFTY BANK (^NSEBANK) with a same-session options playbook.
+            The chart and quote cards auto-refresh every 18 seconds while this
+            tab is open (Yahoo can still lag the NSE tape).
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -230,8 +252,8 @@ export function Dashboard({ initialData }: DashboardProps) {
           <div>
             <CardTitle>Price chart</CardTitle>
             <CardDescription>
-              Candles with 20-period SMA. Volume prints when Yahoo supplies it
-              (index volume is often blank).
+              Candles with 20-period SMA. Auto-refreshes every 18 seconds while
+              this tab is visible. Yahoo index prints can still lag NSE.
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-1">
@@ -366,7 +388,8 @@ export function Dashboard({ initialData }: DashboardProps) {
           <p>
             {data.source}. Last market print{" "}
             {quote ? formatIst(quote.marketTime) : "—"}. Fetched{" "}
-            {formatWhen(data.fetchedAt)} IST. Not investment advice.
+            {formatWhen(data.fetchedAt)} IST. Auto-refresh 18s. Not investment
+            advice.
           </p>
         ) : (
           <p>Not investment advice. Data via Yahoo Finance.</p>

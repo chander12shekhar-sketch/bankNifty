@@ -7,7 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { NextMoveCard } from "@/components/next-move-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBrief } from "@/lib/brief";
-import { cashMarketStatus } from "@/lib/next-move";
+import { REFRESH_MS } from "@/lib/refresh";
 import type { BankNiftyResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -25,30 +25,35 @@ export function MoveDesk({ initialData }: { initialData: BankNiftyResponse | nul
   );
   const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await fetch("/api/banknifty/brief", { cache: "no-store" });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Could not refresh Bank Nifty");
       setData(body as BankNiftyResponse);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not refresh Bank Nifty");
+      if (!silent) {
+        setError(err instanceof Error ? err.message : "Could not refresh Bank Nifty");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") void load(true);
+    };
     const onVis = () => {
-      if (document.visibilityState === "visible") void load();
+      if (document.visibilityState === "visible") void load(true);
     };
     document.addEventListener("visibilitychange", onVis);
-    const id = window.setInterval(() => {
-      const status = cashMarketStatus();
-      if (status === "open" || status === "preopen") void load();
-    }, 60_000);
+    const id = window.setInterval(tick, REFRESH_MS);
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       window.clearInterval(id);
@@ -102,7 +107,7 @@ export function MoveDesk({ initialData }: { initialData: BankNiftyResponse | nul
           <h1 className="text-2xl font-semibold tracking-tight">Next move</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Use this page, WhatsApp, or a Cursor cloud agent from your phone.
-            No Automations required.
+            Quotes auto-refresh every 18 seconds while the page is open.
           </p>
         </div>
         <Button
