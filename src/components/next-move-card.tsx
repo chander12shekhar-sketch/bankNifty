@@ -90,6 +90,47 @@ export function NextMoveCard({ plan }: { plan: NextMove }) {
           </p>
         </div>
 
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ProbBar label="CALL" pct={plan.probabilityCall} tone="call" />
+          <ProbBar label="PUT" pct={plan.probabilityPut} tone="put" />
+          <ProbBar label="Range" pct={plan.probabilityRange} tone="range" />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div
+            className={cn(
+              "rounded-xl border px-4 py-3",
+              plan.side === "CE" && "border-emerald-500/50 bg-emerald-500/10",
+            )}
+          >
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              CALL strike · {plan.probabilityCall}%
+            </p>
+            <p className="font-mono text-2xl tabular-nums text-emerald-300">
+              {inr(plan.callStrike)} CE
+            </p>
+            <p className="text-xs text-muted-foreground">
+              BANKNIFTY {plan.expiryDate}
+            </p>
+          </div>
+          <div
+            className={cn(
+              "rounded-xl border px-4 py-3",
+              plan.side === "PE" && "border-rose-500/50 bg-rose-500/10",
+            )}
+          >
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              PUT strike · {plan.probabilityPut}%
+            </p>
+            <p className="font-mono text-2xl tabular-nums text-rose-300">
+              {inr(plan.putStrike)} PE
+            </p>
+            <p className="text-xs text-muted-foreground">
+              BANKNIFTY {plan.expiryDate}
+            </p>
+          </div>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Level
             label={plan.triggerLive ? "Trigger (in play)" : "Wait for trigger"}
@@ -117,6 +158,34 @@ export function NextMoveCard({ plan }: { plan: NextMove }) {
         </ul>
       </CardContent>
     </Card>
+  );
+}
+
+function ProbBar({
+  label,
+  pct,
+  tone,
+}: {
+  label: string;
+  pct: number;
+  tone: "call" | "put" | "range";
+}) {
+  const bar =
+    tone === "call"
+      ? "bg-emerald-400"
+      : tone === "put"
+        ? "bg-rose-400"
+        : "bg-zinc-400";
+  return (
+    <div className="rounded-lg border px-3 py-2">
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-mono tabular-nums">{pct}%</span>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className={cn("h-full rounded-full", bar)} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }
 

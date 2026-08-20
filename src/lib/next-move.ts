@@ -117,6 +117,46 @@ function previousSession(daily: Candle[], todayYmd: string) {
   return lastBar;
 }
 
+function scenarioProbs(score: number, vix: number | null, expiryChop: boolean) {
+  const rangeBias = (vix != null && vix >= 16 ? 1.7 : 1.1) + (expiryChop ? 0.8 : 0);
+  const up = Math.exp(score / 2.2);
+  const down = Math.exp(-score / 2.2);
+  const range = Math.exp(rangeBias);
+  const z = up + down + range;
+  const probabilityCall = Math.round((up / z) * 100);
+  let probabilityPut = Math.round((down / z) * 100);
+  let probabilityRange = 100 - probabilityCall - probabilityPut;
+  if (probabilityRange < 0) {
+    probabilityPut += probabilityRange;
+    probabilityRange = 0;
+  }
+  return { probabilityCall, probabilityPut, probabilityRange };
+}
+
+function strikesFromProbability(
+  atm: number,
+  callPct: number,
+  putPct: number,
+  rangePct: number,
+  vixOtm: boolean,
+) {
+  let callStrike = atm;
+  let putStrike = atm;
+  if (rangePct >= callPct && rangePct >= putPct) {
+    callStrike = atm + 100;
+    putStrike = atm - 100;
+  } else if (putPct >= callPct) {
+    putStrike = atm;
+    callStrike = atm + (putPct >= 55 ? 200 : 100);
+    if (vixOtm) putStrike -= 100;
+  } else {
+    callStrike = atm;
+    putStrike = atm - (callPct >= 55 ? 200 : 100);
+    if (vixOtm) callStrike += 100;
+  }
+  return { callStrike, putStrike };
+}
+
 function cprFrom(candle: Candle) {
   const pivot = (candle.high + candle.low + candle.close) / 3;
   const bc = (candle.high + candle.low) / 2;
@@ -190,10 +230,44 @@ export function buildNextMove(input: {
   if (indiaVix != null && indiaVix >= 18 && confidence === "high") {
     confidence = "medium";
   }
-  if (expiry.isExpirySession && ist.mins >= 13 * 60) {
+  const expiryChop = expiry.isExpirySession && ist.mins >= 13 * 60;
+  if (expiryChop) {
     direction = "range";
     side = "NONE";
     confidence = "low";
+  }
+
+  const { probabilityCall, probabilityPut, probabilityRange } = scenarioProbs(
+    score,
+    indiaVix,
+    expiryChop,
+  );
+
+  const preferOtm = indiaVix != null && indiaVix >= 16;
+  const atm = roundStrike(price);
+  const { callStrike, putStrike } = strikesFromProbability(
+    atm,
+    probabilityCall,
+    probabilityPut,
+    probabilityRange,
+    preferOtm,
+  );
+
+  if (!expiryChop) {
+    if (probabilityRange >= probabilityCall && probabilityRange >= probabilityPut) {
+      direction = "range";
+      side = "NONE";
+    } else if (probabilityPut >= probabilityCall) {
+      direction = "down";
+      side = "PE";
+      confidence =
+        probabilityPut >= 55 ? "high" : probabilityPut >= 40 ? "medium" : "low";
+    } else {
+      direction = "up";
+      side = "CE";
+      confidence =
+        probabilityCall >= 55 ? "high" : probabilityCall >= 40 ? "medium" : "low";
+    }
   }
 
   const peBreak = Math.min(pdl, cpr?.bc ?? pdl, orb?.low ?? pdl);
@@ -220,21 +294,9 @@ export function buildNextMove(input: {
         ? price > trigger
         : false;
 
-  const preferOtm = indiaVix != null && indiaVix >= 16;
-  const atm = roundStrike(price);
-  const triggerStrike = roundStrike(trigger);
-  const buyStrike =
-    side === "PE"
-      ? preferOtm
-        ? triggerStrike - 100
-        : triggerStrike
-      : side === "CE"
-        ? preferOtm
-          ? triggerStrike + 100
-          : triggerStrike
-        : atm;
+  const buyStrike = side === "PE" ? putStrike : side === "CE" ? callStrike : atm;
   const otmStrike =
-    side === "PE" ? buyStrike - 100 : side === "CE" ? buyStrike + 100 : atm;
+    side === "PE" ? putStrike - 100 : side === "CE" ? callStrike + 100 : atm;
 
   const buyContract =
     side === "NONE"
@@ -270,16 +332,18 @@ export function buildNextMove(input: {
 
   const action =
     side === "NONE"
-      ? `Stand aside. If ${format(peBreak)} breaks on a 5-min close, buy BANKNIFTY ${expiry.label} ${format(roundStrike(peBreak))} PE. If ${format(ceBreak)} breaks, buy ${format(roundStrike(ceBreak))} CE. Same time rules: after 09:30 IST, before ${hardStop}.`
-      : `Buy ${buyContract}. One lot. Only after the 5-minute close ${side === "PE" ? "under" : "over"} ${format(trigger)}. Alternate cheaper debit: ${format(otmStrike)} ${side}.`;
+      ? `Range is the top outcome (${probabilityRange}%). Do not buy yet. If ${format(peBreak)} breaks, buy ${format(putStrike)} PE (${probabilityPut}%). If ${format(ceBreak)} breaks, buy ${format(callStrike)} CE (${probabilityCall}%). After 09:30 IST, before ${hardStop}.`
+      : `Buy ${buyContract} — PUT ${probabilityPut}% vs CALL ${probabilityCall}%. One lot after a 5-minute close ${side === "PE" ? "under" : "over"} ${format(trigger)}. Alternate: ${format(otmStrike)} ${side}.`;
 
   const headline =
     side === "NONE"
-      ? `No CE/PE yet. Wait for ${format(peBreak)} (PE) or ${format(ceBreak)} (CE).`
-      : `Buy ${format(buyStrike)} ${side} (${expiry.label} weekly) — ${triggerLive && status === "open" ? "trigger live, buy on next holding close" : `after 09:30 IST if ${format(trigger)} breaks`}`;
+      ? `Range ${probabilityRange}% — CALL ${format(callStrike)} (${probabilityCall}%) / PUT ${format(putStrike)} (${probabilityPut}%)`
+      : `${side === "PE" ? "PUT" : "CALL"} ${format(buyStrike)} (${side === "PE" ? probabilityPut : probabilityCall}%) vs ${side === "PE" ? "CALL" : "PUT"} ${format(side === "PE" ? callStrike : putStrike)} (${side === "PE" ? probabilityCall : probabilityPut}%)`;
 
   const whyParts: string[] = [];
-  whyParts.push(`Daily structure ${bias} (score ${score}).`);
+  whyParts.push(
+    `Probabilities (technical, not a forecast): CALL ${probabilityCall}% · PUT ${probabilityPut}% · range ${probabilityRange}%. Daily structure ${bias} (score ${score}).`,
+  );
   if (cpr) {
     whyParts.push(
       `CPR ${format(cpr.bc)}–${format(cpr.tc)}; spot is ${
@@ -314,7 +378,7 @@ export function buildNextMove(input: {
   const timeStop = `Hard stop for new buys: ${hardStop}. If the index hits invalidation ${format(invalidation)}, exit the option — do not average.`;
 
   const rules = [
-    `Contract: ${buyContract}. Confirm the strike and weekly expiry on NSE/your broker before you send.`,
+    `Contract to buy if triggered: ${buyContract}. Live CALL ${format(callStrike)} (${probabilityCall}%) / PUT ${format(putStrike)} (${probabilityPut}%). Confirm on NSE.`,
     "Buy only after the 5-minute close, never inside the 09:15–09:30 opening range.",
     "This is a technical playbook from Yahoo index candles plus India VIX, not a guaranteed payout.",
     "Risk is the full premium. One lot. No averaging.",
@@ -345,6 +409,11 @@ export function buildNextMove(input: {
     entryWindow,
     expiryDate: expiry.label,
     indiaVix,
+    probabilityCall,
+    probabilityPut,
+    probabilityRange,
+    callStrike,
+    putStrike,
     rules,
   };
 }

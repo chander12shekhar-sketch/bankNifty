@@ -62,6 +62,11 @@ export type NextMove = {
   entryWindow: string;
   expiryDate: string;
   indiaVix: number | null;
+  probabilityCall: number;
+  probabilityPut: number;
+  probabilityRange: number;
+  callStrike: number;
+  putStrike: number;
   rules: string[];
 };
 
